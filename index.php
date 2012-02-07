@@ -41,9 +41,6 @@ require LE_BASE_DIR . '/php/utilities/console.php';
 console::enable(TRUE);
 console::set_error_handler();
 
-header('Cache-Control: no-cache, must-revalidate');
-header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
-
 le_route_request();
 
 // end of file
