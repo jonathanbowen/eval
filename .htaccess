@@ -11,7 +11,7 @@ Header set X-XSS-Protection "0"
 </ifModule>
 
 # everything's local, no need to cache
-<filesMatch "\.(php|js|css)$">
+<filesMatch "\.(php|html?|js|css)$">
 FileETag None
 <ifModule mod_headers.c>
 Header unset ETag
@@ -27,4 +27,4 @@ RewriteRule ^index\.php$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-RewriteRule ^(.*)$ /eval3/index.php/$1?%{QUERY_STRING} [L]
+RewriteRule ^(.*)$ index.php/$1?%{QUERY_STRING}
