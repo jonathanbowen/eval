@@ -1,0 +1,43 @@
+WHAT SHIT'S IN WHERE
+####################
+
+CSS
+stylesheets, obviously
+
+HELPERS
+php and js convenience functions for use by evaluated code; not used by the application itself
+
+IMG
+images
+
+JS
+all application javascripts
+
+    CONFIG
+    global configuration options
+
+    LIBS
+    external libraries; anything that doesn't extend the LE object
+
+    PLUGINS
+    any shit that could get bolted onto the editor. everything in here's autoloaded after all other scripts
+
+    SYSTEM
+    all the core shit that's used on all pages
+
+    VIEWS
+    shit that gets loaded up for individual pages - this'll be determined by the name of the current php view
+    eg, php view some_shit.php loads up any jscripts in views/some_shit, if folder exists
+
+PHP
+all the shit that does the routing and spits out requisite html
+
+    CONTROLLERS
+    classes loaded depending on uri; first uri segment is controller name, next is method (default index) and others'll be passed as arguments eg some_shit/arse/parsley loads up some_shit.php, instantiates class LE_Some_shit and calls method arse with argument parsley
+
+    UTILITIES
+    helper functions
+
+    VIEWS
+    loaded by controllers to print html output.
+

@@ -1,0 +1,4 @@
+LE.editarea = {
+
+    selected: function() {}
+};
