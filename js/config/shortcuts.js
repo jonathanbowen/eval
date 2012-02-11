@@ -10,6 +10,7 @@ LE.shortcuts = {
     'ctrl+j'       : LE.reload,
     'ctrl+r'       : LE.reload,
     'ctrl+n'       : LE.newFile,
+    'ctrl+alt+n'   : LE.newFile, // chrome won't relinquish ctrl+n
     'ctrl+o'       : LE.openFile,
     'ctrl+s'       : function() { LE.saveFile() },
     'ctrl+shift+s' : function() { LE.saveFile(true); },

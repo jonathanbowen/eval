@@ -1,0 +1,7 @@
+RewriteEngine Off
+
+<filesMatch "\.(png)$">
+<ifModule mod_headers.c>
+Header set Expires "Fri, 11 Feb 2033 05:00:00 GMT"
+</ifModule>
+</filesMatch>

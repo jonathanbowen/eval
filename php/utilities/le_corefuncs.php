@@ -60,7 +60,9 @@ function le_load_js($classname = '') {
     {
         ?>
         <script>
-        window.log = console.log;
+        window.log = function() {
+            return console.log.apply(console, arguments); 
+        };
         window.LE = {
             baseURI: <?php echo json_encode(LE_ABS_BASE_URI); ?>,
             init: {}
