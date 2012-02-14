@@ -2,7 +2,9 @@
  * Define keyboard shortcuts here
  *
  * Default actions of these key combos will be prevented
+ * (only ctrl, alt & shift allowed as combinators)
  * If this is updated, make sure and update the reference at shortcuts.html
+ * Also note keys should be written in lowercase and as listed in keycodes.js
  */
 
 LE.shortcuts = {
