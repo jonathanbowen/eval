@@ -467,7 +467,7 @@ LE.init.autoComplete = function() {
             });
 	}
 	else {
-		setTimeout(function() { LE.init.autoCompleteAddWords(); }, 500);
+		setTimeout(function() { LE.init.autoComplete(); }, 500);
 	}
 
     LE.setAutoComplete();
