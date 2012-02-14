@@ -171,15 +171,10 @@ $.extend(LE, {
 
     setFile: function(filename) { //log('setfile');
 
-        var docTitle, ext;
-
-        docTitle = document.title;
-        docTitle = docTitle.replace(/^.*\| /, '');
+        var ext;
 
         // update syntax if file is different
         if (filename && filename !== LE.currentFile) {
-
-            docTitle = filename.replace(/^.*\//, '') + ' [' + filename + '] | ' + docTitle;
 
             if (ext = /\.(\w+)$/.exec(filename)) {
                 LE.setSyntax(ext[1]);
@@ -195,10 +190,7 @@ $.extend(LE, {
             editAreaLoader.execCommand('code', 'go_to_line', '1');
         }
 
-        document.title = docTitle;
-
     //    LE.storage('latest-file', filename);
-
 
         if (filename) {
             LE.toolbarButton('setUrl').enable();
@@ -210,7 +202,8 @@ $.extend(LE, {
 
         LE.currentFile = filename;
         LE.setEditMode(!!filename);
-      setTimeout(function(){  LE.hashVar('file', filename);},0);
+        LE.setDocTitle();
+        setTimeout(function(){  LE.hashVar('file', filename);},0);
         LE.resetSaveStatus();
     },
 

@@ -9,13 +9,25 @@ $.extend(LE, {
 
     },
 
+    // set page title - prepend name of active file if any
+    setDocTitle: function() {
+
+        var docTitle = document.title.replace(/^.*\| /, '');
+
+        if (LE.currentFile) {
+            docTitle = LE.currentFile.replace(/^.*\//, '') + ' [' + LE.currentFile + '] | ' + docTitle;
+        }
+
+        document.title = docTitle;
+    },
+
     createScrollMenu: function(id, obj) {
 
         var spans = $();
 
         obj && $.each(obj, function(text, item) {
 
-            var span = $('<span class="' + (item.className || '') + '" title="' + 
+            var span = $('<span class="' + (item.className || '') + '" title="' +
                 (item.title || '') + '">' + text + '</span>').click(function() {
 
                 item.callback(this) === false || LE.toolbarButton(id).off();
