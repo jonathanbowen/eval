@@ -490,6 +490,8 @@ $.extend(LE, {
         $.each(obj, function(i, v) {
             LE.storage('prefs.' + i, v);
         });
+        
+        $(document).trigger('LE.savePrefs');
     },
 
     resizeWindows: function() {

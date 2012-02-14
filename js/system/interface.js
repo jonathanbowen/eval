@@ -9,6 +9,11 @@ $.extend(LE, {
 
     },
 
+    setAutoComplete: function() {
+    
+        frames.frame_code.editArea.execCommand('autocomplete_enable', LE.storage('prefs.autocomplete'));
+    },
+
     // set page title - prepend name of active file if any
     setDocTitle: function() {
 

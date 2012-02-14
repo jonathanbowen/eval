@@ -454,7 +454,8 @@ return;
 
 }; */
 
-LE.init.autoCompleteAddWords = function() { 
+LE.init.autoComplete = function() {
+
 	// looks lke ea onready fires before plugins have loaded, so we need this shit
 	if (frames.frame_code.autoCompleteWords) {
 
@@ -468,6 +469,10 @@ LE.init.autoCompleteAddWords = function() {
 	else {
 		setTimeout(function() { LE.init.autoCompleteAddWords(); }, 500);
 	}
+
+    LE.setAutoComplete();
+
+    $(document).bind('LE.savePrefs', LE.setAutoComplete);
 };
 
 // stop the browser remembering last location of iframe
