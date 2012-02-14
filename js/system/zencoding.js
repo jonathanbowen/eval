@@ -56,7 +56,7 @@ $(document).ready(function() {
                         beforeCursor = beforeCursor.replace(zenMarkers, '');
                         afterCursor = afterCursor.replace(zenMarkers, '');
 
-                        editAreaLoader.insertTags('code', beforeCursor, afterCursor);
+                        LE.editor.wrapSelection(beforeCursor, afterCursor);
                     }
                 };
             });

@@ -8,20 +8,7 @@
 $(window).bind('load', function() {
     // opera fix: prevents this function firing before storage script is loaded
     setTimeout(function() {
-        var eaConfig = $.extend(LE.editAreaConfig, {
-            id: 'code',
-            allow_resize: 'no',
-            allow_toggle: false,
-            font_size: LE.storage('font-size'),
-            syntax: LE.getCurrentSyntax(),
-            syntax_selection_allow: LE.getAvailableSyntaxes().join(),
-            toolbar: 'select_font, reset_highlight, word_wrap, syntax_selection',
-            word_wrap: LE.storage('word-wrap'),
-            EA_load_callback: 'LE.eaReady'
-        });
-        
-        editAreaLoader.init(eaConfig);
-        
+        LE.editor.init(LE.editorPlugin);
     }, 0);
 });
 
@@ -29,9 +16,9 @@ $(window).bind('load', function() {
  * Once ea's loaded, fire up all other initialisation functions,
  * and remove loading animation once we're all ready
  */
-LE.eaReady = function() {
+LE.editorReady = function() {
 
-    $(document).trigger('LE.eaReady');
+    $(document).trigger('LE.editorReady');
     $.each(LE.init, function(i, func) {
         func();
     });

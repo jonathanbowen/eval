@@ -8,8 +8,8 @@ $.extend(LE, {
 
     setViewMode: function(mode) {
 
-        var editor    = $('#editor'),
-            eaFrame   = $('#frame_code'),
+        var editor    = LE.editor.getContainer(), // $('#editor'),
+         //   eaFrame   = $('#frame_code'),
             preview   = $('#preview, #preview-iframe'),
             win       = $(window),
             winWidth  = win.width(),
@@ -18,26 +18,18 @@ $.extend(LE, {
 
         LE.viewMode = mode;
 
-        function eaFix() {
-            editAreaLoader.execCommand('code', 'toggle_word_wrap', 1);
-            editAreaLoader.execCommand('code', 'toggle_word_wrap', 1);
-        }
-
-      //  if (LE.previewPopup)
-
         $('#preview').css('margin-top', 0)//.css('padding', 0);
 
         switch (mode) {
             case 'split-y':
-                editor.add(eaFrame).add(preview).width(winWidth).height(winHeight / 2).show();
+                editor.add(preview).width(winWidth).height(winHeight / 2).show();
                 // stupid hack to compensate for 2px gap coming from fuck knows where
                 $('#preview').height((winHeight / 2) + 2).css('margin-top', -2);
-                eaFix();
                 break;
             case 'preview':
                 preview.width(winWidth).height(winHeight).show();
                 // can't hide editarea or it fucks when page loaded in preview mode
-                editor.add(eaFrame).css('height', 0);
+                editor.css('height', 0);
                 break;
             case 'popup':
              //   LE.viewMode = mode;
@@ -57,8 +49,7 @@ $.extend(LE, {
                 } */
             // fall through to fill main window with editor:
             case 'code':
-                editor.add(eaFrame).width(winWidth).height(winHeight + 3).show();
-                eaFix();
+                editor.width(winWidth).height(winHeight + 3).show();
                 preview.hide();
                 break;
             case 'split-x':
@@ -67,9 +58,8 @@ $.extend(LE, {
                     mode = LE.viewMode = 'split-x';
                     LE.hashVar('viewmode', 'split-x');
                 }
-                editor.add(eaFrame).add(preview).width(winWidth / 2).height(winHeight).show();
-                editor.add(eaFrame).height(winHeight + 3);
-                eaFix();
+                editor.add(preview).width(winWidth / 2).height(winHeight).show();
+                editor.height(winHeight + 3);
         }
 
         $('#editor form').attr('target', mode === 'popup' ? 'preview-popup' : 'preview-iframe');
@@ -96,7 +86,7 @@ $.extend(LE, {
     },
 
     newFile: function() {
-        editAreaLoader.setValue('code', LE.storage('prefs.newfile'));
+        LE.editor.setValue(LE.storage('prefs.newfile'));
         LE.setFile(false);
         LE.setSyntax(LE.getDefaultSyntax());
     },
@@ -113,17 +103,11 @@ $.extend(LE, {
 
                 $.fn.dialogbox.close();
 
-                editAreaLoader.setValue('code', json.text);
-
-                editAreaLoader.execCommand('toggle_word_wrap');
-                editAreaLoader.execCommand('toggle_word_wrap');
+                LE.editor.setValue(json.text);
 
                 LE.setFile(filename);
-
-               /*  window.setFile(filename);
-
-                $('#set-url-input').val('')
-                $('#set-url').removeClass('active'); */
+                
+                $(document).trigger('LE.openFile');
             }
             else {
                 LE.setFile(false);
@@ -144,7 +128,7 @@ $.extend(LE, {
 
     doSaveFile: function(filename, confirmOverwrite, callback) {
 
-        var editorContents = editAreaLoader.getValue('code');
+        var editorContents = LE.editor.getValue();
 
         $.post($('#file-iframe').data('baseurl') + 'save', {
             save: filename,
@@ -187,7 +171,7 @@ $.extend(LE, {
 
         // go to line 1 for new or newly opened file
         if (!filename || filename !== LE.currentFile) {
-            editAreaLoader.execCommand('code', 'go_to_line', '1');
+            LE.editor.goToLine(1);
         }
 
     //    LE.storage('latest-file', filename);
@@ -220,7 +204,7 @@ $.extend(LE, {
     },
 
     resetSaveStatus: function() {
-        LE.currentContents = editAreaLoader.getValue('code');
+        LE.currentContents = LE.editor.getValue();
         document.title = document.title.replace(/^\* /, '');
         window.onbeforeunload = null;
     },
@@ -231,7 +215,7 @@ $.extend(LE, {
 
         return function() {
 
-            var code = editAreaLoader.getValue('code'),
+            var code = LE.editor.getValue(),
                 reloadResult = function() {
 
                     var form = $('#code').parents('form'),
@@ -263,7 +247,7 @@ $.extend(LE, {
         return;
 
 
-        var code = editAreaLoader.getValue('code'),
+        var code = LE.editor.getValue(),
             reloadPreview = function() {
                 var frameOrPopup = LE.previewPopup || frames['preview-iframe'];
                 frameOrPopup.location = LE.getPreviewUrl();
@@ -345,8 +329,8 @@ $.extend(LE, {
     },
 
     paste: function() {
-        editAreaLoader.setSelectedText('code','');
-        editAreaLoader.insertTags('code', LE.clipboard, '');
+        LE.editor.replaceSelection('');
+        LE.editor.wrapSelection(LE.clipboard, '');
     },
 
     undo: function() {
@@ -378,31 +362,7 @@ $.extend(LE, {
      */
     duplicateSelectedText: function() {
 
-        var sel      = frames.frame_code.editArea.last_selection,
-            selStart = sel.selectionStart,
-            selEnd   = sel.selectionEnd,
-            selected = editAreaLoader.getSelectedText('code'),
-            copied   = selected.length ? selected : "\n" + sel.curr_line,
-            lineNum  = sel.line_start;
-
-        // go to end of line if nothing selected
-        if (!selected.length) {
-
-            editAreaLoader.execCommand('code', 'go_to_line', (lineNum + 1).toString());
-
-            if (lineNum < sel.nb_line) {
-                sel = frames.frame_code.editArea.last_selection;
-                editAreaLoader.setSelectionRange('code', sel.selectionEnd - 1, sel.selectionEnd - 1);
-            }
-        }
-        // otherwise go to end of selection
-        else {
-            editAreaLoader.setSelectionRange('code', selEnd, selEnd);
-        }
-
-        // insert duplicate of line/selection then revert to previous selection
-        editAreaLoader.insertTags('code', copied, '');
-        editAreaLoader.setSelectionRange('code', selStart, selEnd);
+        LE.editor.duplicateSelection();
     },
 
     openSnippets: function() {
@@ -428,7 +388,7 @@ $.extend(LE, {
             textSize = textSize > max ? max : textSize;
 
             LE.storage('font-size', textSize);
-            frames.frame_code.editArea.set_font(null, textSize);
+            LE.editor.setFontSize(textSize);
 
             LE.toolbarButton('zoomIn').enable();
             LE.toolbarButton('zoomOut').enable();
@@ -443,7 +403,7 @@ $.extend(LE, {
 
         LE.toolbarButton('wordWrap').toggle();
         LE.storage('word-wrap', !LE.storage('word-wrap'));
-        editAreaLoader.execCommand('code', 'toggle_word_wrap', 1);
+        LE.editor.toggleWordWrap();
     },
 
     insertTag: function() {
@@ -525,7 +485,7 @@ $.extend(LE, {
         }
 
      //   sel.val(syntax);
-        editAreaLoader.execCommand('code', 'change_syntax', syntax);
+        LE.editor.setSyntax(syntax);
         LE.hashVar('syntax', syntax);
         $(document).trigger('LE.setSyntax');
     },

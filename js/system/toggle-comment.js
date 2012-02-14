@@ -32,10 +32,10 @@ LE.toggleComment = (function() {
 
     function toggleComment(before, after) {
 
-        var text = editAreaLoader.getSelectedText('code'),
+        var text = LE.editor.getSelection(),
             toggled = after ? toggleWrap(text, before, after) : toggleSingle(text, before);
 
-        editAreaLoader.setSelectedText('code', toggled);
+        LE.editor.replaceSelection(toggled);
     }
 
     ret = toggleComment;

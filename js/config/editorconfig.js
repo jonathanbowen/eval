@@ -1,5 +1,6 @@
+LE.editorPlugin = 'editArea';
 
-LE.editAreaConfig = {
+LE.eaConfig = {
     language: 'en',
     start_highlight: true,
     show_line_colors: true,

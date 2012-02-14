@@ -497,8 +497,6 @@ $.extend(LE, {
         });
 
         LE.replaceSnippetKeys(actualMatches, textBits);
-    
-    //    opener.editAreaLoader.insertTags('code', $('#before-cursor').val(), $('#after-cursor').val());
     },
 
     replaceSnippetKeys: function(keys, textBits) {
@@ -523,7 +521,7 @@ $.extend(LE, {
             });
         } 
         else {
-            opener.editAreaLoader.insertTags('code', textBits[0], textBits[1]);
+            opener.LE.editor.wrapSelection(textBits[0], textBits[1]);
         }
     },
     
@@ -545,10 +543,10 @@ $.extend(LE, {
     evalMacro: function(code) {
 
         try {
-            func = '(function(){function selectedText(str) { var ea = editAreaLoader; if (str !== undefined) { ea.setSelectedText("code", str); } else { return ea.getSelectedText("code"); } } function editorContents(str) { var ea = editAreaLoader; if (str !== undefined) { ea.setValue("code", str); } else { return ea.getValue("code"); } } function insertTags(opener, closer) { editAreaLoader.insertTags("code", opener, closer); }' + code + '})();';
+            func = '(function(){ var ed = LE.editor; function selectedText(str) { if (str !== undefined) { ed.replaceSelection(str); } else { return ed.getSelection(); } } function editorContents(str) { if (str !== undefined) { ed.setValue(str); } else { return ed.getValue(); } } function insertTags(opener, closer) { LE.editor.wrapSelection(opener, closer); }' + code + '})();';
             result = opener.eval(func);
             if (result !== undefined && result !== null) {
-                opener.editAreaLoader.setSelectedText('code', result.toString());
+                opener.LE.editor.replaceSelection(result.toString());
             }
         }
         catch(e) {

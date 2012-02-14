@@ -1,66 +1,294 @@
 LE.editor = (function() {
 
-    var instance;
+    var instance,
+        funcs = ['getValue', 'setValue', 'getSelection', 'replaceSelection', 'getCursor', 'setSelection',
+            'getContainer', 'getKeyElements', 'toggleWordWrap', 'setAutoComplete', 'goToLine', 'wrapSelection',
+            'duplicateSelection', 'setSyntax', 'setFontSize', 'setupSearchForm'],
+        ret = {
+            init: function(obj) {
+                instance = LE.editor[obj];
+                instance.init();
+            }
+        };
 
-    return {
+    $.each(funcs, function(i, v) {
 
-        init: function(obj) {
-            instance = LE.editor[obj];
-        },
-
-        getValue: function() {
-            return instance.getValue();
-        },
-        
-        setValue: function(str) {
-            return instance.setValue(str);
-        },
-        
-        getSelection: function() {
-            return instance.getSelection();
-        },
-        
-        replaceSelection: function(str) {
-            return instance.replaceSelection(str);
-        },
-        
-        getCursor: function() {
-            return instance.getCursor();
-        },
-        
-        setCursor: function(pos) {
-            return instance.setCursor(pos);
-        },
-        
-        setSelection: function(start, end) {
-            return instance.setSelection(start, end);
+        ret[v] = function() {
+            return typeof instance[v] === 'function' ? instance[v].apply(instance[v], arguments) : undefined;
         }
-        
-    };
+    });
+
+    return ret;
 
 }());
 
 LE.editor.editArea = (function() {
 
     var elmId = 'code';
-    
+
+    function init() {
+
+        var eaConfig = $.extend(LE.eaConfig, {
+            id: 'code',
+            allow_resize: 'no',
+            allow_toggle: false,
+            font_size: LE.storage('font-size'),
+            syntax: LE.getCurrentSyntax(),
+            syntax_selection_allow: LE.getAvailableSyntaxes().join(),
+            toolbar: 'select_font, reset_highlight, word_wrap, syntax_selection',
+            word_wrap: LE.storage('word-wrap'),
+            EA_load_callback: 'LE.editorReady'
+        });
+
+        editAreaLoader.init(eaConfig);
+
+        $(document).bind('LE.init', function() {
+
+            var eaDoc = $(frames.frame_code.document);
+
+            eaDoc.find('#toolbar_1').hide();
+            eaDoc.find('#result').css('overflow', 'auto');
+
+            setupAutoComplete();
+            setupSoftParens();
+
+            (function checkundo() {
+                var f = window.frames.frame_code;
+                if (f) {
+                    var undo = LE.toolbarButton('undo'), redo = LE.toolbarButton('redo'), ea = f.editArea;
+                    if (undo.elm.hasClass('disabled')) {
+                        if (ea.previous.length > 1) {
+                            undo.enable();
+                        }
+                    } else if (ea.previous.length < 2) {
+                        undo.disable();
+                    }
+                    if (redo.elm.hasClass('disabled')) {
+                        if (ea.next.length > 0) {
+                            redo.enable();
+                        }
+                    } else if (ea.next.length < 1) {
+                        redo.disable();
+                    }
+                }
+                setTimeout(checkundo, 300);
+            })();
+        });
+
+        function wordWrapFix() {
+            LE.editor.toggleWordWrap();
+            LE.editor.toggleWordWrap();
+        }
+
+        $(document).bind('LE.setViewMode', wordWrapFix);
+        $(document).bind('LE.openFile', wordWrapFix);
+    }
+
     function getValue() {
+        return editAreaLoader.getValue(elmId);
+    }
+
+    function setValue(str) {
+        editAreaLoader.setValue(elmId, str);
+    }
+
+    function getSelection() {
         return editAreaLoader.getSelectedText(elmId);
     }
-    
-    function setValue(str) {
+
+    function replaceSelection(str) {
         editAreaLoader.setSelectedText(elmId, str);
     }
-    
-    return {
-        getValue: getValue,
-        setValue: setValue
+
+    function getContainer() {
+        return $('#editor').add($('#frame_' + elmId));
     }
 
+    // elements needed to be caught for keydown/press events
+    function getKeyElements() {
+        var eaElms = $(frames.frame_code.document);
+        eaElms = eaElms.add(eaElms.find('#textarea'));
+        return eaElms;
+    }
+
+    function toggleWordWrap() {
+        editAreaLoader.execCommand(elmId, 'toggle_word_wrap', 1);
+    }
+
+    function setAutoComplete(onOrNot) {
+        frames.frame_code.editArea.execCommand('autocomplete_enable', onOrNot);
+    }
+
+    function goToLine(lineNum) {
+        editAreaLoader.execCommand(elmId, 'go_to_line', (lineNum || 1).toString());
+    }
+
+    function wrapSelection(before, after) {
+        editAreaLoader.insertTags(elmId, before, after || '');
+    }
+
+    function duplicateSelection() {
+
+        var sel      = frames.frame_code.editArea.last_selection,
+            selStart = sel.selectionStart,
+            selEnd   = sel.selectionEnd,
+            selected = editAreaLoader.getSelectedText(elmId),
+            copied   = selected.length ? selected : "\n" + sel.curr_line,
+            lineNum  = sel.line_start;
+
+        // go to end of line if nothing selected
+        if (!selected.length) {
+
+            editAreaLoader.execCommand(elmId, 'go_to_line', (lineNum + 1).toString());
+
+            if (lineNum < sel.nb_line) {
+                sel = frames.frame_code.editArea.last_selection;
+                editAreaLoader.setSelectionRange(elmId, sel.selectionEnd - 1, sel.selectionEnd - 1);
+            }
+        }
+        // otherwise go to end of selection
+        else {
+            editAreaLoader.setSelectionRange(elmId, selEnd, selEnd);
+        }
+
+        // insert duplicate of line/selection then revert to previous selection
+        editAreaLoader.insertTags(elmId, copied, '');
+        editAreaLoader.setSelectionRange(elmId, selStart, selEnd);
+    }
+
+    function setSyntax(syntax) {
+        editAreaLoader.execCommand(elmId, 'change_syntax', syntax);
+    }
+
+    function setFontSize(size) {
+        frames.frame_code.editArea.set_font(null, size);
+    }
+
+    function setupSearchForm() {
+
+        var form = $('#searchform'), eaFrame = $(frames.frame_code.document),
+            lastMsg = eaFrame.find('#area_search_msg').html(),
+            firstRun = true;
+
+        (function checkMessage() {
+
+            var msg = eaFrame.find('#area_search_msg').html(), eaForm = eaFrame.find('#area_search_replace');
+
+            if (msg !== lastMsg && !($('#area_search').val() && msg === 'Search field empty')) {
+                lastMsg = msg;
+                msg = msg ? '<div style="padding-top:10px">' + msg + '</div>' : '';
+                $('#search-result').html(msg);
+            }
+
+            eaForm.find('input:not([type=button])').each(function(i, v) { //log(v.id);
+
+                if (v.type === 'checkbox') {
+                    v.checked = $('#' + v.id)[0].checked;
+                }
+                else {
+                    v.value = $('#' + v.id).val(); //log(v.value);
+                }
+            });
+
+            setTimeout(checkMessage, 500);
+        }());
+
+        var eaForm = eaFrame.find('#area_search_replace');
+        eaForm.css('margin-left', -99999);
+
+        $('#searchform input[type=button]').click(function() {
+            var func = $(this).data('command');
+
+            eaForm.show();
+            eaForm.find('input:not([type=button])').each(function(i, v) { // log(v.id);
+
+             //   if (v.type === 'button') return;
+
+                if (v.type === 'checkbox') {
+                    v.checked = $('#' + v.id)[0].checked;
+                }
+                else {
+                    v.value = $('#' + v.id).val(); //log(v.value);
+                }
+            });
+
+            function goBackAndDoItProperly(func) {
+
+                editAreaLoader.execCommand('code', func, 1);
+                setTimeout(function() {
+                    if ($('#area_search').val() && eaFrame.find('#area_search_msg').html() === 'Search field empty') {
+                        goBackAndDoItProperly(func);
+                    }
+                }, 100);
+            }
+
+            editAreaLoader.execCommand('code', $(this).data('command'), 1);
+
+            if (firstRun) {
+                goBackAndDoItProperly($(this).data('command'))
+            }
+
+            firstRun = false;
+        });
+    }
+
+    function setupSoftParens() {
+
+        $(frames.frame_code.document).find('#result').bind('keydown', function(e) {
+
+            var sel = frames.frame_code.editArea.last_selection;
+
+            if (e.which === 48 && e.shiftKey &&
+                !editAreaLoader.getSelectedText('code') &&
+                sel.curr_line.substr(sel.curr_pos -1, 1) === ')'
+            ) {
+                var pos = editAreaLoader.getSelectionRange('code').start + 1;
+                editAreaLoader.setSelectionRange('code', pos, pos);
+                return false;
+            }
+        });
+    }
+
+    function setupAutoComplete() {
+
+        // looks lke ea onready fires before plugins have loaded, so we need this shit
+        if (frames.frame_code.autoCompleteWords) {
+
+            var helpers = ['debug()', 'pre()', 'br()', 'gbr()', 'hr()', 'ghr()'];
+
+                frames.frame_code.editArea.execCommand('autocomplete_add_words', {
+                    php: helpers,
+                    js: helpers
+                });
+        }
+        else {
+            setTimeout(setupAutoComplete, 500);
+            return;
+        }
+
+        setAutoComplete(LE.storage('prefs.autocomplete'));
+
+        $(document).bind('LE.savePrefs', function() {
+            setAutoComplete(LE.storage('prefs.autocomplete'));
+        });
+    }
+
+    return {
+        init: init,
+        getValue: getValue,
+        setValue: setValue,
+        getSelection: getSelection,
+        replaceSelection: replaceSelection,
+        getContainer: getContainer,
+        getKeyElements: getKeyElements,
+        toggleWordWrap: toggleWordWrap,
+        setAutoComplete: setAutoComplete,
+        goToLine: goToLine,
+        wrapSelection: wrapSelection,
+        duplicateSelection: duplicateSelection,
+        setSyntax: setSyntax,
+        setFontSize: setFontSize,
+        setupSearchForm: setupSearchForm
+    };
+
 }());
-
-LE.init = LE.init || {};
-
-LE.init.editor = function() {
-    LE.editor.init('editArea');
-}

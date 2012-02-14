@@ -10,8 +10,8 @@ $.extend(LE, {
     },
 
     setAutoComplete: function() {
-    
-        frames.frame_code.editArea.execCommand('autocomplete_enable', LE.storage('prefs.autocomplete'));
+
+        LE.editor.setAutoComplete(LE.storage('prefs.autocomplete'));
     },
 
     // set page title - prepend name of active file if any
@@ -218,70 +218,7 @@ $.extend(LE, {
 
     searchFormInit: function() {
 
-        var form = $('#searchform'), eaFrame = $(frames.frame_code.document),
-            lastMsg = eaFrame.find('#area_search_msg').html(),
-            firstRun = true;
-
-        (function checkMessage() {
-
-            var msg = eaFrame.find('#area_search_msg').html(), eaForm = eaFrame.find('#area_search_replace');
-
-            if (msg !== lastMsg && !($('#area_search').val() && msg === 'Search field empty')) {
-                lastMsg = msg;
-                msg = msg ? '<div style="padding-top:10px">' + msg + '</div>' : '';
-                $('#search-result').html(msg);
-            }
-
-            eaForm.find('input:not([type=button])').each(function(i, v) { //log(v.id);
-
-                if (v.type === 'checkbox') {
-                    v.checked = $('#' + v.id)[0].checked;
-                }
-                else {
-                    v.value = $('#' + v.id).val(); //log(v.value);
-                }
-            });
-
-            setTimeout(checkMessage, 500);
-        }());
-
-        var eaForm = eaFrame.find('#area_search_replace');
-        eaForm.css('margin-left', -99999);
-
-        $('#searchform input[type=button]').click(function() {
-            var func = $(this).data('command');
-
-            eaForm.show();
-            eaForm.find('input:not([type=button])').each(function(i, v) { // log(v.id);
-
-             //   if (v.type === 'button') return;
-
-                if (v.type === 'checkbox') {
-                    v.checked = $('#' + v.id)[0].checked;
-                }
-                else {
-                    v.value = $('#' + v.id).val(); //log(v.value);
-                }
-            });
-
-            function goBackAndDoItProperly(func) {
-
-                editAreaLoader.execCommand('code', func, 1);
-                setTimeout(function() {
-                    if ($('#area_search').val() && eaFrame.find('#area_search_msg').html() === 'Search field empty') {
-                        goBackAndDoItProperly(func);
-                    }
-                }, 100);
-            }
-
-            editAreaLoader.execCommand('code', $(this).data('command'), 1);
-
-            if (firstRun) {
-                goBackAndDoItProperly($(this).data('command'))
-            }
-
-            firstRun = false;
-        });
+        LE.editor.setupSearchForm();
     },
 
     clipboardButtonInit: function(button) {
@@ -291,14 +228,14 @@ $.extend(LE, {
         zClip.setHandCursor(true);
         zClip.addEventListener('mouseOver', function() {
             button.elm.trigger('mouseenter');
-            zClip.setText(editAreaLoader.getSelectedText('code'));
+            zClip.setText(LE.editor.getSelection());
         });
         zClip.addEventListener('mouseout', function() {
             button.elm.trigger('mouseleave');
         });
         zClip.addEventListener('complete', function() {
-            LE.clipboard = editAreaLoader.getSelectedText('code') || editAreaLoader.getValue('code');
-            button.id === 'copy' || editAreaLoader.setSelectedText('code', '');
+            LE.clipboard = LE.editor.getSelection() || LE.editor.getValue();
+            button.id === 'copy' || LE.editor.replaceSelection('');
             button.elm.click();
         });
         zClip.glue(button.elm[0].id);

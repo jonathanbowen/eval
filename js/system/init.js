@@ -6,9 +6,7 @@ LE.init = LE.init || {};
  */
 LE.init.shortcuts = function() {
 
-    var eaElms = $(frames.frame_code.document);
-
-    eaElms = eaElms.add(eaElms.find('#textarea'));
+    var eaElms = LE.editor.getKeyElements();
 
     // bind keydown, keypress and keyup events to main document, editare document
     // and editarea textarea so shortcuts will work wherever the focus is,
@@ -92,25 +90,6 @@ LE.init.toolbars = function() {
     });
 };
 
-// soft parens, or whatever it's called
-// that is, typing a paren in front of a paren skips past it instead of adding a new one
-LE.init.softParens = function() {
-
-    $(frames.frame_code.document).find('#result').bind('keydown', function(e) {
-
-        var sel = frames.frame_code.editArea.last_selection;
-    
-        if (e.which === 48 && e.shiftKey &&
-            !editAreaLoader.getSelectedText('code') &&
-            sel.curr_line.substr(sel.curr_pos -1, 1) === ')'
-        ) {
-            var pos = editAreaLoader.getSelectionRange('code').start + 1;
-            editAreaLoader.setSelectionRange('code', pos, pos);
-            return false;
-        }
-    });
-}
-
 LE.init.dragDivider = function() {
 
     var dragging,
@@ -118,7 +97,7 @@ LE.init.dragDivider = function() {
         preview       = $('#preview'),
         previewIframe = $('#preview-iframe'),
         toolbarHeight = $('#toolbar').outerHeight(),
-        eaFrame       = $('#frame_code'),//.width(editor.width()),
+        eaFrame       = LE.editor.getContainer(),
         viewButtons   = $('#code-view').parent(),
         doc           = $(document),
         x             = 0,
@@ -226,23 +205,6 @@ LE.init.resizeFileBrowser = function() {
     });
 };
 
-LE.init.checkUndo = function() {
-
-};
-
-LE.init.editArea = function() {
-
-    var eaDoc = $(frames.frame_code.document)/* ,
-        syntaxPicker = eaDoc.find('#syntax_selection') */;
-
-    eaDoc.find('#toolbar_1').hide();
-   /*  syntaxPicker.insertBefore(eaDoc.find('#resize_area')).find('option:eq(0)').remove();
-    syntaxPicker.bind('change', function() {
-        LE.hashVar('syntax', this.value);
-    }); */
-    eaDoc.find('#result').css('overflow', 'auto');
-};
-
 LE.init.zeroClipboard = function() {
 
     LE.loadScript('js/libs/zeroclipboard/ZeroClipboard.js').onload = function() {
@@ -256,14 +218,14 @@ LE.init.zeroClipboard = function() {
 			zClip.setHandCursor(false);
 			zClip.addEventListener('mouseOver', function() {
 				button.trigger('mouseenter');
-				zClip.setText(editAreaLoader.getSelectedText('code'));
+				zClip.setText(LE.editor.getSelection());
 			});
 			zClip.addEventListener('mouseout', function() {
 				button.trigger('mouseleave');
 			});
 			zClip.addEventListener('complete', function() {
-				LE.clipboard = editAreaLoader.getSelectedText('code') || editAreaLoader.getValue('code');
-				i || editAreaLoader.setSelectedText('code', '');
+				LE.clipboard = LE.editor.getSelection() || LE.editor.getValue();
+				i || LE.editor.replaceSelection('');
 				button.click();
 			}); 
 			zClip.glue(id);
@@ -290,13 +252,13 @@ LE.init.previewPopup = function() { return;
 
 LE.init.saveStatus = function() {
 
-    LE.currentContents = editAreaLoader.getValue('code');
+    LE.currentContents = LE.editor.getValue();
 
     (function checkModifications() {
 
-        if (!document.title.match(/^\* /) && LE.currentFile && editAreaLoader.getValue('code') !== LE.currentContents) {
+        if (!document.title.match(/^\* /) && LE.currentFile && LE.editor.getValue() !== LE.currentContents) {
             document.title = '* ' + document.title;
-            window.onbeforeunload = function(){ return 'Are you sure?'; };
+            window.onbeforeunload = function(){ return 'This file contains unsaved changes!'; };
         }
 
         setTimeout(checkModifications, 500);
@@ -350,129 +312,6 @@ LE.init.parseHash = function() {
 
 LE.init.toolTips = function() {
     $('[title]').tooltip();
-};
-
-LE.init.checkUndo = function() {
-
- //   var eaFrame = window.frames.frame_code, ea = eaFrame.editArea;
-
-/*     $('#toolbar').click(function() {
-    
-        log(ea.previous.length ? 'undo enabled' : 'undo disabled');
-        log(ea.next.length ? 'redo enabled' : 'redo disabled');
-    
- //       window.arse = true;
- //       log('prev'); console.dir(ea.previous); log('next'); console.dir(ea.next); log('----------');
-    }); */
-    
-//
-
-
-    (function checkundo() {
-        var f = window.frames.frame_code;
-        if (f) {
-            var undo = LE.toolbarButton('undo'), redo = LE.toolbarButton('redo'), ea = f.editArea;
-            if (undo.elm.hasClass('disabled')) {
-                if (ea.previous.length > 1) {
-                    undo.enable();
-                }
-            } else if (ea.previous.length < 2) {
-                undo.disable();
-            }
-            if (redo.elm.hasClass('disabled')) {
-                if (ea.next.length > 0) {
-                    redo.enable();
-                }
-            } else if (ea.next.length < 1) {
-                redo.disable();
-            }
-        }
-        setTimeout(checkundo, 300);
-    })();
-
-
-
-return;    
-    var disabled;
-    (function checkundooo() {
-        
-        if (window.arse) {
-            log('prev'); console.dir(ea.previous); log('next'); console.dir(ea.next); log('----------');
-            window.arse = false;
-        }
-    return;
-        if (ea.previous.length) { 
-        
-        
-        if (disabled || disabled === undefined) {
-            log('enabling undo:');console.dir(ea.previous); disabled = false;
-        }
-        
-        
-       //     LE.toolbarButton('undo').enable();
-        }
-        else { 
-            if (!disabled || disabled === undefined) {
-                log('disabling undo:');console.dir(ea.previous); disabled = true;
-            }
-      //      LE.toolbarButton('undo').disable();
-        }
-
-        if (ea.next.length) {
-    //        LE.toolbarButton('redo').enable();
-        }
-        else {
-     //       LE.toolbarButton('redo').disable();
-        }
-
-        setTimeout(checkundooo, 1000);
-    })();
-};
-
-/* LE.init.clipboardButtons = function() { //return;
-
-    $.each(['cut', 'copy'], function(i, v) {
-
-        var id = 'toolbar-button-' + v,
-            button = $('#' + id),
-            zClip = new ZeroClipboard.Client();
-        zClip.setHandCursor(false);
-        zClip.addEventListener('mouseOver', function() {
-            button.trigger('mouseenter');
-            zClip.setText(editAreaLoader.getSelectedText('code'));
-        });
-        zClip.addEventListener('mouseout', function() {
-            button.trigger('mouseleave');
-        });
-        zClip.addEventListener('complete', function() {
-            LE.clipboard = editAreaLoader.getSelectedText('code') || editAreaLoader.getValue('code');
-            i || editAreaLoader.setSelectedText('code', '');
-            button.click();
-        }); 
-        zClip.glue(id);
-    });
-
-}; */
-
-LE.init.autoComplete = function() {
-
-	// looks lke ea onready fires before plugins have loaded, so we need this shit
-	if (frames.frame_code.autoCompleteWords) {
-
-        var helpers = ['debug()', 'pre()', 'br()', 'gbr()', 'hr()', 'ghr()'];
-
-            frames.frame_code.editArea.execCommand('autocomplete_add_words', {
-                php: helpers,
-                js: helpers
-            });
-	}
-	else {
-		setTimeout(function() { LE.init.autoComplete(); }, 500);
-	}
-
-    LE.setAutoComplete();
-
-    $(document).bind('LE.savePrefs', LE.setAutoComplete);
 };
 
 // stop the browser remembering last location of iframe
