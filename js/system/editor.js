@@ -5,7 +5,7 @@ LE.editor = (function() {
     return {
 
         init: function(obj) {
-            instance = obj;
+            instance = LE.editor[obj];
         },
 
         getValue: function() {
@@ -39,3 +39,28 @@ LE.editor = (function() {
     };
 
 }());
+
+LE.editor.editArea = (function() {
+
+    var elmId = 'code';
+    
+    function getValue() {
+        return editAreaLoader.getSelectedText(elmId);
+    }
+    
+    function setValue(str) {
+        editAreaLoader.setSelectedText(elmId, str);
+    }
+    
+    return {
+        getValue: getValue,
+        setValue: setValue
+    }
+
+}());
+
+LE.init = LE.init || {};
+
+LE.init.editor = function() {
+    LE.editor.init('editArea');
+}
