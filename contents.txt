@@ -41,3 +41,5 @@ all the shit that does the routing and spits out requisite html
     VIEWS
     loaded by controllers to print html output.
 
+TMP
+Just a place to store works in progress; not used by the application itself

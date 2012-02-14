@@ -29,3 +29,6 @@ dwsync.xml
 # Komodo
 *.komodoproject
 .komodotools
+
+# Folders to ignore
+tmp/*
