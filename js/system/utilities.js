@@ -28,7 +28,7 @@ LE.pregQuote = function(str, delimiter) {
     // *     returns 1: '\$40'
     // *     example 2: preg_quote("*RRRING* Hello?");
     // *     returns 2: '\*RRRING\* Hello\?'
-    // *     example 3: preg_quote("\\.+*?[^]$(){}=!<>|:");    
+    // *     example 3: preg_quote("\\.+*?[^]$(){}=!<>|:");
     // *     returns 3: '\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:'
     return (str + '').replace(new RegExp('[.\\\\+*?\\[\\^\\]$(){}=!<>|:\\' + (delimiter || '') + '-]', 'g'), '\\$&');
 };
@@ -42,11 +42,11 @@ LE.ucFirst = function(str) {
     // +   bugfixed by: Onno Marsman
     // +   improved by: Brett Zamir (http://brett-zamir.me)
     // *     example 1: ucfirst('kevin van zonneveld');
-    // *     returns 1: 'Kevin van zonneveld'    
+    // *     returns 1: 'Kevin van zonneveld'
     str += '';
     var f = str.charAt(0).toUpperCase();
     return f + str.substr(1);
-}
+};
 
 LE.ksort = function(inputArr) {
     // Sort an array by key  (stripped down from original at http://phpjs.org/functions/ksort:460 to remove dependencies)
@@ -119,7 +119,7 @@ LE.ksort = function(inputArr) {
     }
 
     return populateArr;
-}
+};
 
 /**
  * sort an html list alphabetically
@@ -148,19 +148,57 @@ $.fn.sortList = function(shallow) {
 
         shallow || list.children('li').children('ul, ol').sortList();
     });
-    
+
     return this;
 };
 
-LE.loadCSS = function(url) {
-    return $('<link rel="stylesheet" href="' + url + '">').appendTo($('head'));
+// http://stackoverflow.com/questions/2635814/javascript-capturing-load-event-on-link
+LE.loadCSS = function(url, callback) {
+
+    if (!url.match(/^https?:/)) url = LE.baseURI + url;
+
+    var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = url;
+
+    document.head.appendChild(link);
+
+    if (callback) {
+        var img = document.createElement('img');
+        img.onerror = callback;
+        img.src = url;
+    }
 };
 
-LE.loadScript = function(url, abs) {
+LE.loadScript = function(url, callback) {
 
     var script = document.createElement('script');
     if (!url.match(/^https?:/)) url = LE.baseURI + url;
     script.src = url;
     document.head.appendChild(script);
-    return script;
-}
+    if (callback) script.onload = callback;
+};
+
+/**
+ * Load up one or more js and/or css files
+ * Fire up a callback when everything's loaded
+ */
+LE.load = function(resources, callback) {
+
+    resources = $.isArray(resources) ? resources : [resources];
+
+    var loaded = 0,
+        cb     = function() {
+            ++loaded === resources.length && callback && callback();
+        };
+
+    $.each(resources, function(i, v) {
+
+        if (v.match(/\.js$/i)) {
+            LE.loadScript(v, cb);
+        }
+        else {
+            LE.loadCSS(v, cb);
+        }
+    });
+};

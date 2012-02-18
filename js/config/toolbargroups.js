@@ -20,7 +20,7 @@ LE.toolbarGroups = {
                     window.open(LE.baseURI);
                 },
                 'Clear contents': function() {
-                    editAreaLoader.setValue('code', '');
+                    LE.editor.setValue('');
                 }
             }
         },
@@ -52,15 +52,11 @@ LE.toolbarGroups = {
     undo: {
         undo: {
             title: 'Undo',
-            callback: function() {
-                editAreaLoader.execCommand('code', 'undo', 1);
-            }
+            callback: LE.editor.undo
         },
         redo: {
             title: 'Redo',
-            callback: function() {
-                editAreaLoader.execCommand('code', 'redo', 1);
-            }
+            callback: LE.editor.redo
         }
     },
     find: {
@@ -101,7 +97,7 @@ LE.toolbarGroups = {
                 $.each(LE.htmlEntities, function(i, v) {
                     ret['&' + v + ';&nbsp; &amp;' + v + ';'] = {
                         callback: function() {
-                            editAreaLoader.insertTags('code', '&' + v + ';', '');
+                            LE.editor.wrapSelection('&' + v + ';', '');
                         }
                     };
                 });
@@ -122,18 +118,18 @@ LE.toolbarGroups = {
             title: 'Colour picker',
             flyout: '<form action="" id="picker-holder" class="flyout-inner"><div><input type="text" id="picker-colour" value="#123456"></div><div id="picker"></div><div><div><input type="button" value="Insert"> <input type="button" value="Close"></div></div></form>',
             init: function() {
-                LE.loadCSS('js/libs/farbtastic/farbtastic.css');
-                LE.loadScript('js/libs/farbtastic/farbtastic.js').onload = function() {
+            
+                LE.load(['js/libs/farbtastic/farbtastic.css', 'js/libs/farbtastic/farbtastic.js'], function() {
                 
                     $('#picker').farbtastic($('#picker-colour'));
                     $('#picker-holder input[value=Insert]').click(function() {
-                        editAreaLoader.setSelectedText('code', $('#picker-colour').val());
+                        LE.editor.replaceSelection($('#picker-colour').val());
                         LE.toolbarButton('colour').off();
                     });
                     $('#picker-holder input[value=Close]').click(function() {
                         LE.toolbarButton('colour').off();
                     });
-                };
+                });
             }
         }
     },

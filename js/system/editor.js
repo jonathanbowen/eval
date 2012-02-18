@@ -3,7 +3,7 @@ LE.editor = (function() {
     var instance,
         funcs = ['getValue', 'setValue', 'getSelection', 'replaceSelection', 'getCursor', 'setSelection',
             'getContainer', 'getKeyElements', 'toggleWordWrap', 'setAutoComplete', 'goToLine', 'wrapSelection',
-            'duplicateSelection', 'setSyntax', 'setFontSize', 'setupSearchForm'],
+            'duplicateSelection', 'undo', 'redo', 'setSyntax', 'setFontSize', 'setupSearchForm'],
         ret = {
             init: function(obj) {
                 instance = LE.editor[obj];
@@ -20,6 +20,31 @@ LE.editor = (function() {
 
     return ret;
 
+}());
+
+LE.editor.codeMirror = (function() {
+
+    var instance;
+
+    function init() {
+    
+        instance = CodeMirror.fromTextArea($('#code')[0]);
+    }
+    
+    function getValue() {
+        return instance.getValue();
+    }
+    
+    function setValue(str) {
+        return instance.setValue(str);
+    }
+    
+    return {
+        init: init,
+        getValue: getValue,
+        setValue: setValue
+    };
+    
 }());
 
 LE.editor.editArea = (function() {
@@ -125,6 +150,16 @@ LE.editor.editArea = (function() {
 
     function wrapSelection(before, after) {
         editAreaLoader.insertTags(elmId, before, after || '');
+    }
+    
+    function undo(steps) {
+        steps = steps || 1;
+        editAreaLoader.execCommand(elmId, 'undo', steps);
+    }
+
+    function redo(steps) {
+        steps = steps || 1;
+        editAreaLoader.execCommand(elmId, 'redo', steps);
     }
 
     function duplicateSelection() {
@@ -285,6 +320,8 @@ LE.editor.editArea = (function() {
         setAutoComplete: setAutoComplete,
         goToLine: goToLine,
         wrapSelection: wrapSelection,
+        undo: undo,
+        redo: redo,
         duplicateSelection: duplicateSelection,
         setSyntax: setSyntax,
         setFontSize: setFontSize,

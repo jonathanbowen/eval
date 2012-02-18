@@ -27,7 +27,7 @@ LE.init.shortcuts = function() {
         $.each(LE.shortcuts, function(text, callback) { //log(text, key);
 
             regex = new RegExp('(\\+|^)' + LE.pregQuote(key) + '$', 'i');
-            
+
             if (text.match(regex)) {
 
                 matched = true;
@@ -71,9 +71,9 @@ LE.init.popups = function() {
     $.each(LE.popups, function(i, v) {
         LE.popup(i, v);
     });
-    
+
     var popupHash = LE.hashVar('popups'), popups;
-    
+
     if (popupHash) {
         popups = popupHash.split(',');
         $.each(popups, function(i, v) {
@@ -207,9 +207,10 @@ LE.init.resizeFileBrowser = function() {
 
 LE.init.zeroClipboard = function() {
 
-    LE.loadScript('js/libs/zeroclipboard/ZeroClipboard.js').onload = function() {
+    LE.load('js/libs/zeroclipboard/ZeroClipboard.js', function() {
+
         ZeroClipboard.setMoviePath(LE.baseURI + 'js/libs/zeroclipboard/ZeroClipboard.swf');
-		
+
 		$.each(['cut', 'copy'], function(i, v) {
 
 			var id = 'toolbar-button-' + v,
@@ -227,17 +228,16 @@ LE.init.zeroClipboard = function() {
 				LE.clipboard = LE.editor.getSelection() || LE.editor.getValue();
 				i || LE.editor.replaceSelection('');
 				button.click();
-			}); 
+			});
 			zClip.glue(id);
 		});
-		
-    };
+    });
 };
 
 LE.init.previewPopup = function() { return;
 
     LE.popup('preview-popup', {
-        url: 'preview', 
+        url: 'preview',
         params: 'width=900,height=600,scrollbars=yes',
         openTest: function() { return true;
             return LE.viewMode === 'popup';
@@ -283,7 +283,7 @@ LE.init.hashListeners = function() {
             }
         }
     }
-    // LE.hashVar('file') || 
+    // LE.hashVar('file') ||
     fileInit();
 
     LE.attachHashListener('file', fileInit);
@@ -300,9 +300,9 @@ LE.init.setView = function() {
         LE.setViewMode(LE.hashVar('viewmode'));
     }
     $(window).resize(adjustPanels);
-    
-    //LE.hashVar('viewmode') || 
-    adjustPanels(); 
+
+    //LE.hashVar('viewmode') ||
+    adjustPanels();
     LE.attachHashListener('viewmode', adjustPanels);
 };
 

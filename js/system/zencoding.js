@@ -3,7 +3,7 @@
  */
 $(document).ready(function() {
 
-    LE.loadScript('js/libs/editarea_0_8_2/edit_area/plugins/zencoding/core.js').onload = function() {
+    LE.load('js/libs/editarea_0_8_2/edit_area/plugins/zencoding/core.js', function() {
 
         LE.zenCoding = function() {
 
@@ -63,5 +63,5 @@ $(document).ready(function() {
 
             return ret;
         };
-    };
+    });
 });
