@@ -1,4 +1,4 @@
-LE.editorPlugin = 'editArea';
+LE.editorPlugin = 'codeMirror';
 
 LE.eaConfig = {
     language: 'en',

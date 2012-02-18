@@ -8,7 +8,7 @@ $.extend(LE, {
 
     setViewMode: function(mode) {
 
-        var editor    = LE.editor.getContainer(), // $('#editor'),
+        var editor    = LE.editor.getContainer().add($('#editor')),
          //   eaFrame   = $('#frame_code'),
             preview   = $('#preview, #preview-iframe'),
             win       = $(window),

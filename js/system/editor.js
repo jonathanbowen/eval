@@ -28,7 +28,28 @@ LE.editor.codeMirror = (function() {
 
     function init() {
     
-        instance = CodeMirror.fromTextArea($('#code')[0]);
+        var files = [
+            'js/libs/CodeMirror-2.21/lib/codemirror.css',
+            'js/libs/CodeMirror-2.21/lib/codemirror.js',
+            'js/libs/CodeMirror-2.21/mode/javascript/javascript.js',
+            'js/libs/CodeMirror-2.21/mode/xml/xml.js',
+            'js/libs/CodeMirror-2.21/mode/css/css.js',
+            'js/libs/CodeMirror-2.21/mode/clike/clike.js',
+            'js/libs/CodeMirror-2.21/mode/php/php.js',
+            'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js'
+        ];
+    
+        LE.load(files, function() {
+    
+            instance = CodeMirror.fromTextArea($('#code')[0], {
+                mode: 'application/x-httpd-php',
+                lineNumbers: true,
+                lineWrapping: LE.storage('word-wrap'),
+                matchBrackets: true
+            });
+            
+            LE.editorReady();
+        });
     }
     
     function getValue() {
@@ -39,10 +60,74 @@ LE.editor.codeMirror = (function() {
         return instance.setValue(str);
     }
     
+    function getSelection() {
+        return instance.getSelection();
+    }
+    
+    function replaceSelection(str) {
+        instance.replaceSelection(str);
+    }
+    
+    function getContainer() {
+        return $(instance.getScrollerElement()).add($(instance.getWrapperElement()));
+    }
+    
+    // codemirror api should mean we won't need this...
+    function getKeyElements() {
+        return getContainer();
+    } 
+    
+    function toggleWordWrap() {
+        instance.setOption('lineWrapping', !instance.getOption('lineWrapping'))
+    } 
+    
+    function setAutoComplete(onOrNot) {} 
+    
+    function goToLine(num) {
+        instance.setCursor(num - 1, 0);
+    }
+    
+    function wrapSelection(before, after) {
+        
+        after = after || '';
+        instance.replaceSelection(before + instance.getSelection() + after);
+    }
+    
+    function duplicateSelection() {} 
+    
+    function undo() {
+        return instance.undo();
+    } 
+    
+    function redo() {
+        return instance.redo();
+    } 
+    
+    function setSyntax(syntax) {} 
+    
+    function setFontSize(size) {} 
+    
+    // very specific to ea foibles, this hopefully won't last
+    function setupSearchForm() {}
+    
     return {
         init: init,
         getValue: getValue,
-        setValue: setValue
+        setValue: setValue,
+        getSelection: getSelection,
+        replaceSelection: replaceSelection,
+        getContainer: getContainer,
+        getKeyElements: getKeyElements, 
+        toggleWordWrap: toggleWordWrap, 
+        setAutoComplete: setAutoComplete, 
+        goToLine: goToLine, 
+        wrapSelection: wrapSelection,
+        duplicateSelection: duplicateSelection, 
+        undo: undo, 
+        redo: redo, 
+        setSyntax: setSyntax, 
+        setFontSize: setFontSize, 
+        setupSearchForm: setupSearchForm
     };
     
 }());
