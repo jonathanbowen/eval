@@ -1,6 +1,6 @@
 LE.storageItems = {
     'font-size': [9, function(v) {
-        return v && v.toString().match(/^\d+$/) && v > 8 && v < 16;
+        return v && v.toString().match(/^\d+$/);
     }],
     'word-wrap': [true, function(v) {
         return typeof v === 'boolean';

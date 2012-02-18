@@ -186,11 +186,14 @@ LE.init.dragDivider = function() {
 
         x = e.pageX;
         y = e.pageY;
+        
+        $(document).trigger('LE.dragging');
     })
     .bind('mousedown', function() {
         if (dragging) return false;
     })
     .bind('mouseup', function() {
+        if (dragging) $(document).trigger('LE.dragStop');
         dragging = false;
         mask.hide();
     });

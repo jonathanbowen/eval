@@ -3,7 +3,8 @@ LE.editor = (function() {
     var instance,
         funcs = ['getValue', 'setValue', 'getSelection', 'replaceSelection', 'getCursor', 'setSelection',
             'getContainer', 'getKeyElements', 'toggleWordWrap', 'setAutoComplete', 'goToLine', 'wrapSelection',
-            'duplicateSelection', 'undo', 'redo', 'setSyntax', 'setFontSize', 'setupSearchForm'],
+            'duplicateSelection', 'undo', 'redo', 'clearHistory', 'setSyntax', 'setFontSize', 'setupSearchForm',
+            'getInstance'],
         ret = {
             init: function(obj) {
                 instance = LE.editor[obj];
@@ -27,89 +28,168 @@ LE.editor.codeMirror = (function() {
     var instance;
 
     function init() {
-    
-        var files = [
-            'js/libs/CodeMirror-2.21/lib/codemirror.css',
-            'js/libs/CodeMirror-2.21/lib/codemirror.js',
-            'js/libs/CodeMirror-2.21/mode/javascript/javascript.js',
-            'js/libs/CodeMirror-2.21/mode/xml/xml.js',
-            'js/libs/CodeMirror-2.21/mode/css/css.js',
-            'js/libs/CodeMirror-2.21/mode/clike/clike.js',
-            'js/libs/CodeMirror-2.21/mode/php/php.js',
-            'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js'
-        ];
-    
-        LE.load(files, function() {
-    
-            instance = CodeMirror.fromTextArea($('#code')[0], {
-                mode: 'application/x-httpd-php',
-                lineNumbers: true,
-                lineWrapping: LE.storage('word-wrap'),
-                matchBrackets: true
+
+        // need to load in 2 stages, otherwise the dependency files
+        // sometimes come through before the main codemirror.js,
+        // which throws an error as codemirror isn't defined yet
+        LE.load('js/libs/CodeMirror-2.21/lib/codemirror.js', function() {
+
+            var files = [
+                'js/libs/CodeMirror-2.21/lib/codemirror.css',
+             //   'js/libs/CodeMirror-2.21/theme/cobalt.css',
+                'js/libs/CodeMirror-2.21/lib/util/searchcursor.js',
+                'js/libs/CodeMirror-2.21/lib/util/simple-hint.js',
+                'js/libs/CodeMirror-2.21/mode/javascript/javascript.js',
+                'js/libs/CodeMirror-2.21/mode/xml/xml.js',
+                'js/libs/CodeMirror-2.21/mode/css/css.js',
+                'js/libs/CodeMirror-2.21/mode/clike/clike.js',
+                'js/libs/CodeMirror-2.21/mode/php/php.js',
+                'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js'
+            ];
+
+            LE.load(files, function() {
+
+                instance = CodeMirror.fromTextArea($('#code')[0], {
+                    mode: 'application/x-httpd-php',
+                //    theme: 'cobalt',
+                    lineNumbers: true,
+                    lineWrapping: LE.storage('word-wrap'),
+                    matchBrackets: true,
+                    indentUnit: 4,
+                    smartIndent: false,
+                    tabIndex: 1,
+                    onUpdate: checkUndo,
+                    onKeyEvent: function(o, e) {
+                        // codemirror wants to use ctrl+d to delete lines! NOOOO!
+                        if (e.keyCode === 68 && e.ctrlKey) {
+                            return true;
+                        }
+                    }
+                });
+
+                setFontSize(LE.storage('font-size'));
+
+                $(document).bind('LE.setViewMode LE.dragging LE.dragStop', instance.refresh);
+
+                LE.editorReady();
             });
-            
-            LE.editorReady();
         });
     }
-    
+
     function getValue() {
         return instance.getValue();
     }
-    
+
     function setValue(str) {
         return instance.setValue(str);
     }
-    
+
     function getSelection() {
         return instance.getSelection();
     }
-    
+
     function replaceSelection(str) {
         instance.replaceSelection(str);
     }
-    
+
     function getContainer() {
         return $(instance.getScrollerElement()).add($(instance.getWrapperElement()));
     }
-    
-    // codemirror api should mean we won't need this...
-    function getKeyElements() {
+
+    // codemirror doesn't use an iframe, so don't need this...
+    function getKeyElements() { return $();
         return getContainer();
-    } 
-    
+    }
+
     function toggleWordWrap() {
         instance.setOption('lineWrapping', !instance.getOption('lineWrapping'))
-    } 
-    
-    function setAutoComplete(onOrNot) {} 
-    
+    }
+
+    function setAutoComplete(onOrNot) {}
+
     function goToLine(num) {
         instance.setCursor(num - 1, 0);
     }
-    
+
     function wrapSelection(before, after) {
-        
+
         after = after || '';
         instance.replaceSelection(before + instance.getSelection() + after);
     }
-    
-    function duplicateSelection() {} 
-    
+
+    function duplicateSelection() {
+
+        var sel = instance.getSelection(),
+            rep,
+            selStart = instance.coordsChar(instance.cursorCoords()),
+            selEnd = instance.coordsChar(instance.cursorCoords(false));
+
+        if (sel) {
+
+            if (selStart.line === selEnd.line && selStart.ch === selEnd.ch) {
+                // if there's a selection, but start and end are the same,
+                // something's gone a bit tits-up, so let's do the maths:
+                selStart.ch -= sel.length;
+            }
+            rep = sel + sel;
+        }
+        else {
+            rep = '\n' + instance.getLine(selStart.line);
+        }
+
+        instance.replaceSelection(rep);
+        instance.setSelection(selStart, selEnd);
+    }
+
     function undo() {
-        return instance.undo();
-    } 
-    
+        instance.undo();
+        checkUndo();
+    }
+
     function redo() {
-        return instance.redo();
-    } 
-    
-    function setSyntax(syntax) {} 
-    
-    function setFontSize(size) {} 
-    
+        instance.redo();
+        checkUndo();
+    }
+
+    function clearHistory() {
+        instance.clearHistory();
+    }
+
+    function checkUndo() {
+
+        // seems to get called from the onUpdate option before everything's set up, so need to check
+        if (!instance) return;
+
+        var history = instance.historySize();
+        history.undo ? LE.toolbarButton('undo').enable() : LE.toolbarButton('undo').disable();
+        history.redo ? LE.toolbarButton('redo').enable() : LE.toolbarButton('redo').disable();
+    }
+
+    function setSyntax(syntax) {
+
+        var mimes = {
+            php: 'application/x-httpd-php',
+            js: 'text/javascript',
+            html: 'text/html',
+            css: 'text/css'
+        };
+
+        mimes[syntax] && instance.setOption('mode', mimes[syntax]);
+    }
+
+    function setFontSize(size) {
+        $(instance.getWrapperElement()).css('font-size', size + 'px');
+        instance.refresh();
+        $(document).trigger('LE.fontSizeAdjust');
+    }
+
     // very specific to ea foibles, this hopefully won't last
     function setupSearchForm() {}
-    
+
+    function getInstance() {
+        return instance;
+    }
+
     return {
         init: init,
         getValue: getValue,
@@ -117,19 +197,21 @@ LE.editor.codeMirror = (function() {
         getSelection: getSelection,
         replaceSelection: replaceSelection,
         getContainer: getContainer,
-        getKeyElements: getKeyElements, 
-        toggleWordWrap: toggleWordWrap, 
-        setAutoComplete: setAutoComplete, 
-        goToLine: goToLine, 
+        getKeyElements: getKeyElements,
+        toggleWordWrap: toggleWordWrap,
+        setAutoComplete: setAutoComplete,
+        goToLine: goToLine,
         wrapSelection: wrapSelection,
-        duplicateSelection: duplicateSelection, 
-        undo: undo, 
-        redo: redo, 
-        setSyntax: setSyntax, 
-        setFontSize: setFontSize, 
-        setupSearchForm: setupSearchForm
+        duplicateSelection: duplicateSelection,
+        undo: undo,
+        redo: redo,
+        clearHistory: clearHistory,
+        setSyntax: setSyntax,
+        setFontSize: setFontSize,
+        setupSearchForm: setupSearchForm,
+        getInstance: getInstance
     };
-    
+
 }());
 
 LE.editor.editArea = (function() {
@@ -236,7 +318,7 @@ LE.editor.editArea = (function() {
     function wrapSelection(before, after) {
         editAreaLoader.insertTags(elmId, before, after || '');
     }
-    
+
     function undo(steps) {
         steps = steps || 1;
         editAreaLoader.execCommand(elmId, 'undo', steps);

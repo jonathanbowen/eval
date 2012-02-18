@@ -73,7 +73,9 @@ LE.toolbarGroups = {
         },
         zoomOut: {
             title: 'Decrease text size',
-            callback: function() { LE.textSizeAdjust(-1); }
+            callback: function() { LE.textSizeAdjust(-1); },
+            // disable either zoom in or zoom out buttons if we're at min or max size
+            init: function() { $(document).trigger('LE.fontSizeAdjust'); }
         },
         wordWrap: {
             title: 'Toggle word wrap',

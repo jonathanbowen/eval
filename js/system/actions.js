@@ -49,7 +49,7 @@ $.extend(LE, {
                 } */
             // fall through to fill main window with editor:
             case 'code':
-                editor.width(winWidth).height(winHeight + 3).show();
+                editor.width(winWidth).height(winHeight + 0).show(); // NB: editarea needs winHeight + 3
                 preview.hide();
                 break;
             case 'split-x':
@@ -59,7 +59,7 @@ $.extend(LE, {
                     LE.hashVar('viewmode', 'split-x');
                 }
                 editor.add(preview).width(winWidth / 2).height(winHeight).show();
-                editor.height(winHeight + 3);
+                editor.height(winHeight + 0); // see NB above
         }
 
         $('#editor form').attr('target', mode === 'popup' ? 'preview-popup' : 'preview-iframe');
@@ -182,6 +182,10 @@ $.extend(LE, {
         else {
             LE.toolbarButton('setUrl').disable();
             LE.updateUrl(false);
+        }
+        
+        if (filename !== LE.currentFile) {
+            LE.editor.clearHistory();
         }
 
         LE.currentFile = filename;
@@ -376,7 +380,20 @@ $.extend(LE, {
 
     textSizeAdjust: (function() {
 
-        var textSize, min = 8, max = 16;
+        var textSize, min = 8, max = 20;
+        
+        function enableOrDisableButtons() {
+
+            var size = parseInt(LE.storage('font-size'), 10);
+        
+            LE.toolbarButton('zoomIn').enable();
+            LE.toolbarButton('zoomOut').enable();
+
+            if (size === max) LE.toolbarButton('zoomIn').disable();
+            if (size === min) LE.toolbarButton('zoomOut').disable();
+        }
+        
+        $(document).bind('LE.fontSizeAdjust', enableOrDisableButtons);
 
         return function(increment) {
 
@@ -389,12 +406,6 @@ $.extend(LE, {
 
             LE.storage('font-size', textSize);
             LE.editor.setFontSize(textSize);
-
-            LE.toolbarButton('zoomIn').enable();
-            LE.toolbarButton('zoomOut').enable();
-
-            if (textSize === max) LE.toolbarButton('zoomIn').disable();
-            if (textSize === min) LE.toolbarButton('zoomOut').disable();
         };
 
     }()),

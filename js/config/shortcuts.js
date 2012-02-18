@@ -17,6 +17,7 @@ LE.shortcuts = {
     'ctrl+s'       : function() { LE.saveFile() },
     'ctrl+shift+s' : function() { LE.saveFile(true); },
     'ctrl+f'       : function() { LE.toolbarButton('find').toggle(); },
+    'ctrl+='       : function() { LE.textSizeAdjust(1); },
     'ctrl++'       : function() { LE.textSizeAdjust(1); },
     'ctrl+-'       : function() { LE.textSizeAdjust(-1); },
     'ctrl+l'       : LE.cycleSyntax,
