@@ -16,7 +16,7 @@ LE.editor = (function() {
 
         ret[v] = function() {
             return typeof instance[v] === 'function' ? instance[v].apply(instance[v], arguments) : undefined;
-        }
+        };
     });
 
     return ret;
@@ -44,7 +44,11 @@ LE.editor.codeMirror = (function() {
                 'js/libs/CodeMirror-2.21/mode/css/css.js',
                 'js/libs/CodeMirror-2.21/mode/clike/clike.js',
                 'js/libs/CodeMirror-2.21/mode/php/php.js',
-                'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js'
+                'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js',
+                
+                'js/libs/CodeMirror-2.21/lib/util/autocomplete.js',
+                'js/libs/CodeMirror-2.21/lib/util/autocomplete-words.js',
+                'js/libs/CodeMirror-2.21/lib/util/autocomplete.css'
             ];
 
             LE.load(files, function() {
@@ -64,10 +68,12 @@ LE.editor.codeMirror = (function() {
                         if (e.keyCode === 68 && e.ctrlKey) {
                             return true;
                         }
+                        return CodeMirror.autoComplete(o, e);
                     }
                 });
 
                 setFontSize(LE.storage('font-size'));
+                CodeMirror.autoComplete.init(instance);
 
                 $(document).bind('LE.setViewMode LE.dragging LE.dragStop', instance.refresh);
 
