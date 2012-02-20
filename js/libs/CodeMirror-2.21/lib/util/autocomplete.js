@@ -1,17 +1,39 @@
 CodeMirror.autoComplete = (function() {
 
-    var editor,
-        suggestionHolder,numSuggestions = 5,
-        currentMode,
-        ret;
+    var editor,                  // instance of CodeMirror
+        autoCompleteWords,       // list of words
+        suggestionHolder,        // DOM element containing words
+        numSuggestions = 5,      // number of suggestions to show
+        currentMode,             // current syntax
+        ret;                     // what gets spat out down the bottom. as it were.
 
-    function init(instance) {
+    /**
+     * Initialise
+     *
+     * @param {Object} instance: instance of CodeMirror
+     * @param {Object} words: object literal containing words for available syntaxes
+     * @param {Number} num: number of suggestions to show
+     */
+    function init(instance, words, num) {
 
         editor = instance;
+        autoCompleteWords = words;
+        numSuggestions = num || numSuggestions;
+
         createSuggestionHolder();
         document.body.addEventListener('click', hideSuggestionHolder);
+
+        var currentKeyEvent = editor.getOption('onKeyEvent');
+        if (typeof currentKeyEvent !== 'function') currentKeyEvent = function(){};
+
+        editor.setOption('onKeyEvent', function(o, e) {
+
+            var ret = currentKeyEvent(o, e);
+            if (ret !== true) ret = keyEvent(e);
+            return ret;
+        });
     }
-    
+
     /**
      * Append suggestion holder to body
      */
@@ -25,13 +47,13 @@ CodeMirror.autoComplete = (function() {
 
         sortWordList();
         suggestionHolder = document.createElement('div');
-        suggestionHolder.id = 'autocomplete';
+        suggestionHolder.className = 'CodeMirror-autocomplete';
         document.body.appendChild(suggestionHolder);
 
         for (syntax in autoCompleteWords) {
 
             holder = document.createElement('div');
-            holder.id = 'autocomplete_' + syntax;
+            holder.className = 'autocomplete_' + syntax;
             suggestionHolder.appendChild(holder);
 
             for (i = 0, len = autoCompleteWords[syntax].length; i < len; i++) {
@@ -43,24 +65,33 @@ CodeMirror.autoComplete = (function() {
                 span.onmouseover = setSpanAsCurrent;
                 span.onclick = function() {
                     setEditorContents(this.firstChild.nodeValue);
+                    editor.focus();
                 };
             }
         }
     }
 
     function keyEvent(e) {
-    
-        if (editor.somethingSelected()) return;
 
-        var key = e.which, 
-            state = getState(), 
-            mode = state.state.mode, 
-            isVisible = suggestionHolder.style.display === 'block';;
+        // don't bother if there's something selected
+        // also keypress is not needed, and its keycodes are different, which would cause havoc below
+        if (editor.somethingSelected() || e.type === 'keypress') return;
+
+        var key = e.which,
+            state = getState(),
+            mode = state.state.mode,
+            isVisible = suggestionHolder.style.display === 'block';
+
+        // looks like mode key is returned for html & php files that can have mixed syntax
+        // for js/css, grab the option value
+        if (!mode) {
+            mode = editor.getOption('mode').replace(/^.*\W/, '');
+        }
 
         mode === currentMode || setSyntax(mode);
-        
+
         switch (key) {
-        
+
             // enter to insert suggestion
             case 13:
                 if (isVisible) {
@@ -99,21 +130,23 @@ CodeMirror.autoComplete = (function() {
         }
     }
 
+    /**
+     * Get state at current cursor position
+     */
     function getState() {
 
-        var pos = editor.coordsChar(editor.cursorCoords()),
+        var pos = editor.getCursor(),
             line = pos.line,
             ch = pos.ch;
 
         return editor.getTokenAt({line:line,ch:ch});
     }
 
-
     /**
      * Add words to syntax list
      *
-     * @param {Object|String} syntax: syntax to add to, or object of syntaxes and words eg {php:['foo','bar'],js:'baz'}
-     * @param {Object|String} words: array of words, or string if adding single word
+     * @param {String} syntax: syntax to add to
+     * @param {Object} words: array of words
      */
     function addWords(syntax, words) {
 
@@ -123,15 +156,15 @@ CodeMirror.autoComplete = (function() {
 
             inArray(words[i], autoCompleteWords[syntax]) === false && autoCompleteWords[syntax].push(words[i]);
         }
-        
+
         createSuggestionHolder();
     }
 
     /**
      * Remove words from syntax list
      *
-     * @param {Object|String} syntax: syntax to delete from, or object of syntaxes and words
-     * @param {Object|String} words: array of words, or string if deleting single word
+     * @param {String} syntax: syntax to delete from
+     * @param {Object} words: array of words
      */
     function deleteWords(syntax, words) {
 
@@ -146,7 +179,7 @@ CodeMirror.autoComplete = (function() {
                 index === false || delete autoCompleteWords[syntax][index];
             }
         }
-        
+
         createSuggestionHolder();
     }
 
@@ -183,7 +216,7 @@ CodeMirror.autoComplete = (function() {
      */
     function sortWordList() {
 
-        autoCompleteWords = window.autoCompleteWords || {};
+        autoCompleteWords = autoCompleteWords || {};
 
         for (var i in autoCompleteWords) {
             autoCompleteWords[i].sort(caseInsensitiveSort);
@@ -229,7 +262,6 @@ CodeMirror.autoComplete = (function() {
         // if vertical space available is less than sum of top position, holder height & scroll position,
         // shift upwards so it shows above the current line
         if (wrapper.clientHeight < (css.top + sHeight - wrapper.scrollTop)) {
-           // css.top = sField.offsetTop + cursor.offsetTop - sHeight;
             css.top = cursorCoords.y - sHeight;
         }
 
@@ -272,13 +304,13 @@ CodeMirror.autoComplete = (function() {
 
         for (i = 0, len = holders.length; i < len; i++) {
 
-            if (holders[i].id.replace(/autocomplete_/, '') === syntax) {
+            if (holders[i].className.match('autocomplete_' + syntax)) {
                 holders[i].style.display = 'block';
-                holders[i].className = 'current-syntax';
+                holders[i].className += ' current-syntax';
             }
             else {
                 holders[i].style.display = 'none';
-                holders[i].className = '';
+                holders[i].className = holders[i].className.replace(/ current-syntax/g, '');
             }
         }
 
@@ -418,7 +450,7 @@ CodeMirror.autoComplete = (function() {
         if (suggestion && len) {
 
             cursorPos = editor.coordsChar(editor.cursorCoords());
-            
+
             editor.setSelection({line: cursorPos.line, ch: cursorPos.ch - len}, cursorPos);
 
             if (suggestion.substr(-1) === ')') {
@@ -430,7 +462,7 @@ CodeMirror.autoComplete = (function() {
             }
 
             editor.replaceSelection(beforeCursor + afterCursor);
-            cursorPos = {line: cursorPos.line, ch: cursorPos.ch - len + beforeCursor.length};           
+            cursorPos = {line: cursorPos.line, ch: cursorPos.ch - len + beforeCursor.length};
             editor.setSelection(cursorPos, cursorPos);
         }
 
@@ -449,20 +481,10 @@ CodeMirror.autoComplete = (function() {
         return holder ? holder.getElementsByClassName('current')[0].firstChild.nodeValue : false;
     }
 
-    ret = function(instance, e) {
-
-     //   if (e.type === 'keydown') {
-
-            editor || init(instance);
-            return keyEvent(e);
-      //  }
-    };
-    
-    ret.init = init;
+    ret = init;
     ret.addWords = addWords;
     ret.deleteWords = deleteWords;
-    
+
     return ret;
 
 }());
-

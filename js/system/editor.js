@@ -45,9 +45,9 @@ LE.editor.codeMirror = (function() {
                 'js/libs/CodeMirror-2.21/mode/clike/clike.js',
                 'js/libs/CodeMirror-2.21/mode/php/php.js',
                 'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js',
-                
+
                 'js/libs/CodeMirror-2.21/lib/util/autocomplete.js',
-                'js/libs/CodeMirror-2.21/lib/util/autocomplete-words.js',
+           //     'js/libs/CodeMirror-2.21/lib/util/autocomplete-words.js',
                 'js/libs/CodeMirror-2.21/lib/util/autocomplete.css'
             ];
 
@@ -68,12 +68,12 @@ LE.editor.codeMirror = (function() {
                         if (e.keyCode === 68 && e.ctrlKey) {
                             return true;
                         }
-                        return CodeMirror.autoComplete(o, e);
                     }
                 });
 
+                CodeMirror.autoComplete(instance, LE.autoCompleteWords);
+                
                 setFontSize(LE.storage('font-size'));
-                CodeMirror.autoComplete.init(instance);
 
                 $(document).bind('LE.setViewMode LE.dragging LE.dragStop', instance.refresh);
 
@@ -126,22 +126,9 @@ LE.editor.codeMirror = (function() {
     function duplicateSelection() {
 
         var sel = instance.getSelection(),
-            rep,
-            selStart = instance.coordsChar(instance.cursorCoords()),
-            selEnd = instance.coordsChar(instance.cursorCoords(false));
-
-        if (sel) {
-
-            if (selStart.line === selEnd.line && selStart.ch === selEnd.ch) {
-                // if there's a selection, but start and end are the same,
-                // something's gone a bit tits-up, so let's do the maths:
-                selStart.ch -= sel.length;
-            }
-            rep = sel + sel;
-        }
-        else {
-            rep = '\n' + instance.getLine(selStart.line);
-        }
+            selStart = instance.getCursor(true),
+            selEnd = instance.getCursor(false),
+            rep = sel ? sel + sel : '\n' + instance.getLine(selStart.line);
 
         instance.replaceSelection(rep);
         instance.setSelection(selStart, selEnd);
