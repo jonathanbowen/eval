@@ -38,7 +38,7 @@ LE.editor.codeMirror = (function() {
                 'js/libs/CodeMirror-2.21/lib/codemirror.css',
              //   'js/libs/CodeMirror-2.21/theme/cobalt.css',
                 'js/libs/CodeMirror-2.21/lib/util/searchcursor.js',
-                'js/libs/CodeMirror-2.21/lib/util/simple-hint.js',
+
                 'js/libs/CodeMirror-2.21/mode/javascript/javascript.js',
                 'js/libs/CodeMirror-2.21/mode/xml/xml.js',
                 'js/libs/CodeMirror-2.21/mode/css/css.js',
@@ -47,7 +47,6 @@ LE.editor.codeMirror = (function() {
                 'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js',
 
                 'js/libs/CodeMirror-2.21/lib/util/autocomplete.js',
-           //     'js/libs/CodeMirror-2.21/lib/util/autocomplete-words.js',
                 'js/libs/CodeMirror-2.21/lib/util/autocomplete.css'
             ];
 
@@ -65,14 +64,17 @@ LE.editor.codeMirror = (function() {
                     onUpdate: checkUndo,
                     onKeyEvent: function(o, e) {
                         // codemirror wants to use ctrl+d to delete lines! NOOOO!
-                        if (e.keyCode === 68 && e.ctrlKey) {
+                        if (e.which === 68 && e.ctrlKey) {
                             return true;
                         }
+
+                        e.type === 'keydown' && softBrackets(e);
+                        e.type === 'keyup' && balanceBrackets(e);
                     }
                 });
 
                 CodeMirror.autoComplete(instance, LE.autoCompleteWords);
-                
+
                 setFontSize(LE.storage('font-size'));
 
                 $(document).bind('LE.setViewMode LE.dragging LE.dragStop', instance.refresh);
@@ -80,6 +82,44 @@ LE.editor.codeMirror = (function() {
                 LE.editorReady();
             });
         });
+    }
+
+    function balanceBrackets(e) {
+
+        var cursor = instance.getCursor(),
+            token = instance.getTokenAt(cursor),
+            ch = token.string,
+            key = e.which,
+            rep = { '{':'}', '[':']', '(':')'};
+
+        if (key === 219 || key === 57 && token.className !== 'string' &&
+            !instance.somethingSelected() &&
+            (ch === '(' || ch === '[' || ch === '{')
+        ) {
+            instance.replaceSelection(rep[ch]);
+            instance.setSelection(cursor, cursor);
+        }
+    }
+
+    function softBrackets(e) {
+
+        var cursor = instance.getCursor(),
+            thisToken = instance.getTokenAt(cursor),
+            nextToken = instance.getTokenAt({line: cursor.line, ch: cursor.ch + 1}),
+            nextCh = nextToken.string,
+            key = e.which;
+
+        if (nextToken.className === 'string' ||
+            // need this, otherwise it fires after a bracket at the end of a line
+            cursor.ch === instance.lineInfo(cursor.line).text.length) return;
+
+        if (
+            (key === 48 && nextCh === ')') ||
+            (key === 221 && (nextCh === ']' || nextCh === '}'))
+        ) {
+            instance.setCursor({line: cursor.line, ch: cursor.ch + 1});
+            e.stop();
+        }
     }
 
     function getValue() {
