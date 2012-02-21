@@ -1,6 +1,5 @@
 .CodeMirror-autocomplete {
     position: absolute;
-    background: #fff;
     box-shadow: 1px 1px 5px #999;
     z-index: 9999999;
     display: none;

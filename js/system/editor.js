@@ -74,10 +74,16 @@ LE.editor.codeMirror = (function() {
                 });
 
                 CodeMirror.autoComplete(instance, LE.autoCompleteWords);
+                
+                setAutoComplete(LE.storage('prefs.autocomplete'));
 
                 setFontSize(LE.storage('font-size'));
 
-                $(document).bind('LE.setViewMode LE.dragging LE.dragStop', instance.refresh);
+                $(document)
+                    .bind('LE.setViewMode LE.dragging LE.dragStop', instance.refresh)
+                    .bind('LE.savePrefs', function() {
+                        setAutoComplete(LE.storage('prefs.autocomplete'));
+                    });
 
                 LE.editorReady();
             });
@@ -151,7 +157,9 @@ LE.editor.codeMirror = (function() {
         instance.setOption('lineWrapping', !instance.getOption('lineWrapping'))
     }
 
-    function setAutoComplete(onOrNot) {}
+    function setAutoComplete(onOrNot) {
+        CodeMirror.autoComplete(instance)[onOrNot ? 'enable' : 'disable']();
+    }
 
     function goToLine(num) {
         instance.setCursor(num - 1, 0);
