@@ -79,10 +79,10 @@
             <label for="area_search_reg_exp">Regular expressions </label>
         </div>
         <div>
-            <input type="button" value="Find next" id="search-find-next" data-command="area_search">
+            <input type="submit" value="Find next" id="search-find-next" data-command="area_search">
             <input type="button" value="Replace" id="search-replace" data-command="area_replace">
             <input type="button" value="Replace all" id="search-replace-all" data-command="area_replace_all">
-            <div id="search-result" style="text-align:left"></div>
+            <div id="search-result"></div>
         </div>
     </form>
 

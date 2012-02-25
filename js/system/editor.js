@@ -37,6 +37,7 @@ LE.editor.codeMirror = (function() {
             var files = [
                 'js/libs/CodeMirror-2.21/lib/codemirror.css',
              //   'js/libs/CodeMirror-2.21/theme/cobalt.css',
+
                 'js/libs/CodeMirror-2.21/lib/util/searchcursor.js',
 
                 'js/libs/CodeMirror-2.21/mode/javascript/javascript.js',
@@ -47,10 +48,15 @@ LE.editor.codeMirror = (function() {
                 'js/libs/CodeMirror-2.21/mode/htmlmixed/htmlmixed.js',
 
                 'js/libs/CodeMirror-2.21/lib/util/autocomplete.js',
-                'js/libs/CodeMirror-2.21/lib/util/autocomplete.css'
+                'js/libs/CodeMirror-2.21/lib/util/autocomplete.css',
+
+                'js/libs/CodeMirror-2.21/lib/util/foldcode.js',
             ];
 
             LE.load(files, function() {
+
+                var foldFuncBrace = CodeMirror.newFoldFunction(CodeMirror.braceRangeFinder),
+                    foldFuncTag   = CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder);
 
                 instance = CodeMirror.fromTextArea($('#code')[0], {
                     mode: 'application/x-httpd-php',
@@ -62,7 +68,12 @@ LE.editor.codeMirror = (function() {
                     smartIndent: false,
                     tabIndex: 1,
                     onUpdate: checkUndo,
-                    onKeyEvent: function(o, e) {
+                    onChange: clearSearch,
+                    onGutterClick: function(editor, line) {
+                        foldFuncBrace(editor, line);
+                        foldFuncTag(editor, line);
+                    },
+                    onKeyEvent: function(editor, e) {
                         // codemirror wants to use ctrl+d to delete lines! NOOOO!
                         if (e.which === 68 && e.ctrlKey) {
                             return true;
@@ -74,7 +85,7 @@ LE.editor.codeMirror = (function() {
                 });
 
                 CodeMirror.autoComplete(instance, LE.autoCompleteWords);
-                
+
                 setAutoComplete(LE.storage('prefs.autocomplete'));
 
                 setFontSize(LE.storage('font-size'));
@@ -102,8 +113,10 @@ LE.editor.codeMirror = (function() {
             !instance.somethingSelected() &&
             (ch === '(' || ch === '[' || ch === '{')
         ) {
+            try {
             instance.replaceSelection(rep[ch]);
             instance.setSelection(cursor, cursor);
+            } catch(x){ log(rep[ch]);} // threw an error, but then stopped. hmm..
         }
     }
 
@@ -224,8 +237,166 @@ LE.editor.codeMirror = (function() {
         $(document).trigger('LE.fontSizeAdjust');
     }
 
-    // very specific to ea foibles, this hopefully won't last
-    function setupSearchForm() {}
+    // integrate codemirror search with toolbar search flyout
+    // this Frankenstein's monster cobbled together from codemirrors util/search.js
+
+    function SearchState() {
+        this.posFrom = this.posTo = this.query = null;
+        this.marked = [];
+    }
+
+    function getSearchState() {
+        return instance._searchState || (instance._searchState = new SearchState());
+    }
+
+    function clearSearch() {
+        instance.operation(function() {
+            var state = getSearchState();
+            if (!state.query) return;
+            state.query = null;
+            for (var i = 0; i < state.marked.length; ++i) state.marked[i].clear();
+            state.marked.length = 0;
+        });
+        setSearchMessage('');
+    }
+
+    function setSearchMessage(msg) {
+        $('#search-result').text(msg || '');
+    }
+
+    function setupSearchForm() {
+
+        var changed = false;
+        function parseQuery(query) {
+            var isRE = $('#area_search_reg_exp')[0].checked,
+                flag = isCaseFold() ? 'i' : '';
+            if (isRE) {
+                try {
+                    query = new RegExp(query, flag);
+                }
+                catch(e) {
+                    var msg = LE.htmlChars(e.message),
+                        bits = /^(.*?):(.*)$/.exec(msg),
+                        title = bits ? bits[1] : 'Error',
+                        message = bits ? bits[2] : msg;
+
+                    LE.dialog({
+                        title: title,
+                        message: message,
+                        afterClose: function() {
+                            $('#area_search').focus();
+                        }
+                    });
+                    query = '';
+                }
+            }
+            return query;
+        }
+        function isCaseFold() {
+            return !$('#area_search_match_case')[0].checked;
+        }
+        function doSearch() {
+
+            var cm = instance,
+                query = $('#area_search').val(),
+                caseFold = isCaseFold(),
+                state = getSearchState();
+
+            changed && clearSearch();
+            changed = false;
+
+            if (state.query) {
+                findNext(cm, caseFold);
+            }
+            else {
+                cm.operation(function() {
+                    if (!query || state.query) return;
+                    state.query = parseQuery(query);
+                    var found = 0;
+                    if (cm.lineCount() < 2000) { // This is too expensive on big documents.
+                        for (var cursor = cm.getSearchCursor(query, null, caseFold); cursor.findNext();) {
+                            state.marked.push(cm.markText(cursor.from(), cursor.to(), "CodeMirror-searching"));
+                            ++found;
+                        }
+
+                        found && setSearchMessage(found + ' occurrance' + (found === 1 ? '' : 's') + ' found.');
+                    }
+                    state.posFrom = state.posTo = cm.getCursor();
+                    findNext(cm, caseFold);
+                });
+            }
+        }
+        function doReplace(all) {
+            var cm = instance,
+                query = parseQuery($('#area_search').val()),
+                caseFold = isCaseFold(),
+                rep = $('#area_replace').val();
+
+            if (all === true) {
+                cm.operation(function() {
+                    for (var cursor = cm.getSearchCursor(query, null, caseFold); cursor.findNext();) {
+                        if (typeof query != "string") {
+                            var match = cm.getRange(cursor.from(), cursor.to()).match(query);
+                            cursor.replace(rep.replace(/\$(\d)/, function(w, i) {return match[i];}));
+                        }
+                        else cursor.replace(rep);
+                    }
+                });
+            }
+            else {
+                function replaceAndAdvance() {
+
+                    var sel = cm.getSelection();
+
+                    if (typeof query === 'string' && caseFold) {
+                        sel = sel.toLowerCase();
+                        query = query.toLowerCase();
+                    }
+
+                    if (sel.match(query)) {
+                        clearSearch();
+                        cm.replaceSelection(rep);
+                        doSearch();
+                        return true;
+                    }
+                    return false;
+                }
+                if (!replaceAndAdvance()) {
+                    doSearch();
+                    replaceAndAdvance();
+                }
+            }
+        }
+        function findNext(cm, caseFold, rev) {
+            cm.operation(function() {
+                var state = getSearchState();
+                var cursor = cm.getSearchCursor(state.query, rev ? state.posFrom : state.posTo, caseFold);
+                if (!cursor.find(rev)) {
+                  cursor = cm.getSearchCursor(state.query, rev ? {line: cm.lineCount() - 1} : {line: 0, ch: 0}, caseFold);
+                  if (!cursor.find(rev)) {
+                    setSearchMessage('‘' + state.query.toString() + '’ not found.');
+                    return;
+                  }
+                }
+                cm.setSelection(cursor.from(), cursor.to());
+                state.posFrom = cursor.from(); state.posTo = cursor.to();
+            });
+        }
+
+        $('#searchform input').bind('change', function() { changed = true; })
+            .focus(function() {
+                $(this).addClass('focussed');
+            })
+            .blur(function() {
+                $(this).removeClass('focussed');
+            });
+        $('#searchform').submit(function() {
+            $('#area_replace').hasClass('focussed') ? doReplace() : doSearch();
+            return false;
+        });
+        $('#search-replace').click(doReplace);
+        $('#search-replace-all').click(function() { doReplace(true); });
+    }
 
     function getInstance() {
         return instance;
