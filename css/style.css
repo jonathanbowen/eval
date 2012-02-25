@@ -20,6 +20,7 @@ input, select, textarea {
     border: 1px solid #ccc;
     color: #888;
     background: #fafafa;
+    outline: 0;
 }
 input:focus, select:focus, textarea:focus {
     border: 1px solid #aaa;
@@ -56,8 +57,8 @@ input[type=button]:hover, input[type=submit]:hover, button:hover, input[type=but
 }
 label {
     cursor: pointer;
-    font-family: Georgia;
-    font-style: italic;
+    /* font-family: Georgia;
+    font-style: italic; */
 }
 dl { margin: 0 }
 dt { font-weight: bold; float: left; clear: left; width: 150px; padding-right: 10px }
@@ -85,10 +86,8 @@ pre {
     z-index: 9999;
 }
 #toolbar {
-    background: #eee;
     background: -moz-linear-gradient(top, #fff, #eee);
     background: -webkit-linear-gradient(top, #fff, #eee);
-    background: linear-gradient(top, #fff, #eee);
     background: linear-gradient(top, #fff, #eee);
     box-shadow: 0 1px 3px #c4c4c4;
     border-bottom: 1px solid #a3a3a3;
@@ -103,8 +102,6 @@ pre {
 #editor, #preview {
     position: relative;
     top: 0;
-}
-#editor, #preview {
     float: left;
 }
 #code, #preview-iframe {
@@ -167,29 +164,24 @@ pre {
     float: left;
     padding: 0 6px;
     margin: 4px 0;
- /*    padding: 3px 0 3px 6px;
-    overflow: hidden; 
-    margin-top: -3px;*/
 }
 .toolbar-section + .toolbar-section {
     border-left: 0 !important;
- /*    padding-left: 0 !important; */
 }
 .toolbar-button, .edit-mode {
     float: left;
-    min-width: 14px;
-    height: 20px;
-    line-height: 21px;
+    min-width: 16px;
+    height: 22px;
+    line-height: 22px;
     font-size: 11px;
     text-transform: uppercase;
     font-weight: bold;
     text-indent: 20px;
-    border: 1px solid transparent;
-    border-radius: 3px;
+    border-radius: 2px;
     padding: 0 3px;
     outline: none;
     background-repeat: no-repeat;
-    background-position: 2px 50%;
+    background-position: 3px 50%;
     margin-left: 3px;
     cursor: default;
 }
@@ -198,16 +190,16 @@ pre {
 }
 .toolbar-button.on {
     background-color: #fafafa;
-    border-color: #aaa #fdfdfd #fff #bbb;
+    box-shadow: inset 1px 1px 1px #999;
 }
 .toolbar-button:hover, .toolbar-button.hover {
     background-color: #fff;
-    border-color: #666 #f9f9f9 #fff #999;
+    box-shadow: inset 1px 1px 1px #777;
 }
 .toolbar-button.disabled {
     background-color: transparent;
-    border-color: #eee;
     opacity: 0.5;
+    box-shadow: none;
 }
 
 .flyout, .context-menu {
@@ -232,9 +224,7 @@ pre {
 }
 .scroll-menu, .context-menu {
     font-size: 12px;
-  /*   text-transform: uppercase;
-    text-transform: capitalize; */
-    padding: 3px 0;
+    padding: 2px 0;
 }
 
 .scroll-menu span, .context-menu span {
@@ -245,13 +235,15 @@ pre {
     cursor: pointer;
 }
 .scroll-menu span:hover, .context-menu span:hover {
-    background: #ddd;
+   /*  background: #ddd;
     outline: 1px solid #9adffe; 
     background: -moz-linear-gradient(top, #f2f9fe, #d6f0fd);
     background: -webkit-linear-gradient(top, #f2f9fe, #d6f0fd);
     background: linear-gradient(top, #f2f9fe, #d6f0fd);
+    color: #000; */
     border-radius: 4px;
-    color: #000;
+    background: #39f;
+    color: #fff;
 }
 
 .tip {
@@ -265,31 +257,9 @@ pre {
     z-index: 9999999;
     white-space: pre;
 }
-/* div.table {
-    display: table;
-    width: 100%;
-    padding: 8px 0;
-    margin: 0 10px;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
+.CodeMirror-gutter {
+    cursor: default;
 }
-.table > div {
-    display: table-row;
-    padding: 10px;
-}
-.table > div *{
-    display: table-cell;
-}
-.table > div label {
-    padding: 5px 0 5px 10px;
-}
-.table > div input {
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-    margin-left: -10px;
-    width: 100%;
-} */
-
 /**
  * Individual items
  */
@@ -448,6 +418,10 @@ pre {
 #searchform input[type=text] {
     float: right;
     width: 200px;
+}
+#search-result {
+    text-align: left;
+    margin-top: 4px;
 }
 /**
  * file browser
